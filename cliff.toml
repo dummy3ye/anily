@@ -13,7 +13,7 @@ body = """
 {% for commit in commits %}
 - {{ commit.message | upper_first }}\
   {% if commit.breaking %} **[breaking]**{% endif %}
-  ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/{{ remote.github.owner }}/{{ remote.github.repository }}/commit/{{ commit.id }}))
+  ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/dummy3ye/anily/commit/{{ commit.id }}))
 {% endfor %}
 {% endfor %}
 """
