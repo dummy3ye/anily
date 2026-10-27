@@ -1,0 +1,26 @@
+[package]
+name = "anily"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ratatui = "0.30"
+crossterm = "0.28"
+reqwest = { version = "0.12", features = ["json", "gzip"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1.0"
+async-trait = "0.1"
+thiserror = "1.0"
+directories = "5.0"
+base64 = "0.22"
+scraper = "0.20"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+ratatui-image = { version = "11", default-features = false, features = ["image-defaults", "crossterm"] }
+discord-rich-presence = "1.1"
+
+[profile.release]
+opt-level = "z"
+codegen-units = 1
+lto = true
