@@ -1,0 +1,6 @@
+/target/
+*.swp
+*.tmp
+.env
+.env.*
+!.env.example

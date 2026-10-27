@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - name: macos-x86_64
+            os: macos-latest
+            target: x86_64-apple-darwin
+            archive: tar.gz
+          - name: macos-aarch64
+            os: macos-latest
+            target: aarch64-apple-darwin
+            archive: tar.gz
+          - name: windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo build --release --target ${{ matrix.target }}
+      - name: Package Unix artifact
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          mkdir -p dist/anily-${{ github.ref_name }}-${{ matrix.name }}
+          cp target/${{ matrix.target }}/release/anily dist/anily-${{ github.ref_name }}-${{ matrix.name }}/
+          tar -C dist -czf anily-${{ github.ref_name }}-${{ matrix.name }}.tar.gz anily-${{ github.ref_name }}-${{ matrix.name }}
+      - name: Package Windows artifact
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "dist/anily-${{ github.ref_name }}-${{ matrix.name }}"
+          Copy-Item "target/${{ matrix.target }}/release/anily.exe" "dist/anily-${{ github.ref_name }}-${{ matrix.name }}/"
+          Compress-Archive -Path "dist/anily-${{ github.ref_name }}-${{ matrix.name }}" -DestinationPath "anily-${{ github.ref_name }}-${{ matrix.name }}.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: anily-${{ matrix.name }}
+          path: anily-${{ github.ref_name }}-${{ matrix.name }}.*
+
+  publish:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+      - run: git-cliff --current --tag "${{ github.ref_name }}" --output RELEASE_NOTES.md
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: anily-*
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Anily ${{ github.ref_name }}
+          body_path: RELEASE_NOTES.md
+          files: dist/*
