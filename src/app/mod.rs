@@ -93,7 +93,9 @@ impl App {
                             let mut urls = Vec::new();
                             for anime in self.all_home_anime_mut() {
                                 if anime.id == id {
-                                    if let Some(url) = anime.cover_large.as_ref().filter(|u| !u.is_empty()) {
+                                    if let Some(url) =
+                                        anime.cover_large.as_ref().filter(|u| !u.is_empty())
+                                    {
                                         urls.push((id, url.clone()));
                                     }
                                 }
@@ -144,10 +146,8 @@ impl App {
             if anime.cover_art.is_none() && !self.cover_tasks.contains_key(&anime.id) {
                 let url = if !anime.cover.is_empty() {
                     Some(anime.cover.clone())
-                } else if let Some(url_l) = anime.cover_large.as_ref().filter(|u| !u.is_empty()) {
-                    Some(url_l.clone())
                 } else {
-                    None
+                    anime.cover_large.as_ref().filter(|u| !u.is_empty()).cloned()
                 };
                 if let Some(url) = url {
                     let client = self.client.clone();
@@ -167,10 +167,8 @@ impl App {
         if anime.cover_art.is_none() && !self.cover_tasks.contains_key(&anime.id) {
             let url = if !anime.cover.is_empty() {
                 Some(anime.cover.clone())
-            } else if let Some(url_l) = anime.cover_large.as_ref().filter(|u| !u.is_empty()) {
-                Some(url_l.clone())
             } else {
-                None
+                anime.cover_large.as_ref().filter(|u| !u.is_empty()).cloned()
             };
             if let Some(url) = url {
                 let client = self.client.clone();

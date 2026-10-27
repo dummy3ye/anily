@@ -161,10 +161,7 @@ fn page_to_anime(page: Page) -> Vec<Anime> {
                 .or(media.title.romaji)
                 .or(media.title.native)
                 .unwrap_or_else(|| "Untitled".to_string()),
-            cover: media
-                .cover_image
-                .extra_large
-                .unwrap_or_default(),
+            cover: media.cover_image.extra_large.unwrap_or_default(),
             cover_large: media.cover_image.large,
             episodes: media.episodes,
             status: media.status.unwrap_or_else(|| "UNKNOWN".to_string()),

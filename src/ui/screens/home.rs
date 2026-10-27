@@ -15,7 +15,7 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(4),
             Constraint::Min(CARD_HEIGHT),
             Constraint::Length(1),
         ])
@@ -55,7 +55,7 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut App) {
         ),
         Rect {
             x: chunks[0].x,
-            y: chunks[0].y + 1,
+            y: chunks[0].y + 2,
             width: chunks[0].width,
             height: 1,
         },
@@ -137,6 +137,19 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut App) {
             }
             app.start_cover(anime);
             let selected = app.state.home_section == section && app.state.section_selected == index;
+            frame.render_widget(
+                Paragraph::new("").style(if selected {
+                    Style::default().bg(Color::Rgb(35, 45, 75))
+                } else {
+                    Style::default()
+                }),
+                Rect {
+                    x: area.x,
+                    y,
+                    width: area.width,
+                    height: 4,
+                },
+            );
             let image_area = Rect {
                 x: area.x,
                 y,
@@ -183,17 +196,6 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut App) {
                     height: 1,
                 },
             );
-            if selected {
-                frame.render_widget(
-                    Paragraph::new("›").style(Style::default().fg(Color::Rgb(245, 170, 215))),
-                    Rect {
-                        x: area.x.saturating_sub(1),
-                        y,
-                        width: 1,
-                        height: 1,
-                    },
-                );
-            }
         }
     }
 
@@ -259,7 +261,7 @@ fn draw_cards(frame: &mut Frame<'_>, app: &mut App, area: Rect) {
             width: CARD_WIDTH.saturating_sub(1),
             height: CARD_HEIGHT.saturating_sub(1),
         };
-        let selected = index == selected_index;
+        let selected = index == selected_index && app.state.home_section == HomeSection::Trending;
         let accent = [
             Color::Rgb(45, 50, 90),
             Color::Rgb(65, 45, 90),
@@ -272,6 +274,14 @@ fn draw_cards(frame: &mut Frame<'_>, app: &mut App, area: Rect) {
             width: card_area.width,
             height: 7,
         };
+        frame.render_widget(
+            Paragraph::new("").style(if selected {
+                Style::default().bg(Color::Rgb(35, 45, 75))
+            } else {
+                Style::default()
+            }),
+            card_area,
+        );
         if let Some(protocol) = app.cover_protocol(anime, cover_area.width, cover_area.height) {
             frame.render_widget(ratatui_image::Image::new(&protocol), cover_area);
         } else {
