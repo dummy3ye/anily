@@ -7,6 +7,7 @@ pub struct Anime {
     pub id: u32,
     pub title: String,
     pub cover: String,
+    pub cover_large: Option<String>,
     pub episodes: Option<u32>,
     pub status: String,
     pub cover_art: Option<CoverArt>,
@@ -163,8 +164,8 @@ fn page_to_anime(page: Page) -> Vec<Anime> {
             cover: media
                 .cover_image
                 .extra_large
-                .or(media.cover_image.large)
                 .unwrap_or_default(),
+            cover_large: media.cover_image.large,
             episodes: media.episodes,
             status: media.status.unwrap_or_else(|| "UNKNOWN".to_string()),
             cover_art: None,

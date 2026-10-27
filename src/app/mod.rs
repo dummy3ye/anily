@@ -80,10 +80,37 @@ impl App {
             .collect();
         for id in finished {
             if let Some(task) = self.cover_tasks.remove(&id) {
-                if let Ok(Some(cover)) = task.await {
-                    if let Some(anime) = self.all_home_anime_mut().find(|anime| anime.id == id) {
-                        anime.cover_art = Some(cover);
+                match task.await {
+                    Ok(Some(cover)) => {
+                        for anime in self.all_home_anime_mut() {
+                            if anime.id == id {
+                                anime.cover_art = Some(cover.clone());
+                            }
+                        }
                     }
+                    Ok(None) => {
+                        let retries: Vec<(u32, String)> = {
+                            let mut urls = Vec::new();
+                            for anime in self.all_home_anime_mut() {
+                                if anime.id == id {
+                                    if let Some(url) = anime.cover_large.as_ref().filter(|u| !u.is_empty()) {
+                                        urls.push((id, url.clone()));
+                                    }
+                                }
+                            }
+                            urls
+                        };
+                        for (retry_id, url) in retries {
+                            let client = self.client.clone();
+                            self.cover_tasks.insert(
+                                retry_id,
+                                tokio::spawn(async move {
+                                    crate::providers::anilist::fetch_cover(&client, &url).await
+                                }),
+                            );
+                        }
+                    }
+                    Err(_) => {}
                 }
             }
         }
@@ -114,12 +141,39 @@ impl App {
 
     pub fn start_visible_covers(&mut self, start: usize, end: usize) {
         for anime in self.state.results[start..end].iter() {
-            if anime.cover_art.is_none()
-                && !self.cover_tasks.contains_key(&anime.id)
-                && !anime.cover.is_empty()
-            {
+            if anime.cover_art.is_none() && !self.cover_tasks.contains_key(&anime.id) {
+                let url = if !anime.cover.is_empty() {
+                    Some(anime.cover.clone())
+                } else if let Some(url_l) = anime.cover_large.as_ref().filter(|u| !u.is_empty()) {
+                    Some(url_l.clone())
+                } else {
+                    None
+                };
+                if let Some(url) = url {
+                    let client = self.client.clone();
+                    let id = anime.id;
+                    self.cover_tasks.insert(
+                        id,
+                        tokio::spawn(async move {
+                            crate::providers::anilist::fetch_cover(&client, &url).await
+                        }),
+                    );
+                }
+            }
+        }
+    }
+
+    pub fn start_cover(&mut self, anime: &crate::providers::anilist::Anime) {
+        if anime.cover_art.is_none() && !self.cover_tasks.contains_key(&anime.id) {
+            let url = if !anime.cover.is_empty() {
+                Some(anime.cover.clone())
+            } else if let Some(url_l) = anime.cover_large.as_ref().filter(|u| !u.is_empty()) {
+                Some(url_l.clone())
+            } else {
+                None
+            };
+            if let Some(url) = url {
                 let client = self.client.clone();
-                let url = anime.cover.clone();
                 let id = anime.id;
                 self.cover_tasks.insert(
                     id,
@@ -128,23 +182,6 @@ impl App {
                     }),
                 );
             }
-        }
-    }
-
-    pub fn start_cover(&mut self, anime: &crate::providers::anilist::Anime) {
-        if anime.cover_art.is_none()
-            && !self.cover_tasks.contains_key(&anime.id)
-            && !anime.cover.is_empty()
-        {
-            let client = self.client.clone();
-            let url = anime.cover.clone();
-            let id = anime.id;
-            self.cover_tasks.insert(
-                id,
-                tokio::spawn(
-                    async move { crate::providers::anilist::fetch_cover(&client, &url).await },
-                ),
-            );
         }
     }
 
