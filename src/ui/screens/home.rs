@@ -113,6 +113,20 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut App) {
             _ => HomeSection::Favorite,
         };
         let active = app.state.home_section == section;
+        let available_height = area.height.saturating_sub(2);
+        let visible_count = ((available_height / 5) as usize).max(1);
+
+        let scroll = if active {
+            if app.state.section_selected < app.state.compact_scroll {
+                app.state.compact_scroll = app.state.section_selected;
+            } else if app.state.section_selected >= app.state.compact_scroll + visible_count {
+                app.state.compact_scroll = app.state.section_selected + 1 - visible_count;
+            }
+            app.state.compact_scroll
+        } else {
+            0
+        };
+
         frame.render_widget(
             Paragraph::new(if active {
                 format!("▶ {heading}")
@@ -130,8 +144,9 @@ pub fn draw(frame: &mut Frame<'_>, app: &mut App) {
             ),
             Rect { height: 1, ..area },
         );
-        for (index, anime) in anime_list.iter().enumerate() {
-            let y = area.y + 2 + index as u16 * 5;
+        for (visible_idx, anime) in anime_list.iter().skip(scroll).enumerate() {
+            let index = scroll + visible_idx;
+            let y = area.y + 2 + visible_idx as u16 * 5;
             if y + 4 > area.bottom() {
                 break;
             }

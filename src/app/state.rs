@@ -24,6 +24,7 @@ pub struct AppState {
     pub searching: bool,
     pub home_section: HomeSection,
     pub section_selected: usize,
+    pub compact_scroll: usize,
     pub loading: bool,
     pub error: Option<String>,
     pub results: Vec<Anime>,
@@ -53,6 +54,7 @@ impl AppState {
             searching: false,
             home_section: HomeSection::Trending,
             section_selected: 0,
+            compact_scroll: 0,
             loading: true,
             error: None,
             results: Vec::new(),
@@ -104,6 +106,7 @@ impl AppState {
                         HomeSection::Trending => {
                             self.home_section = HomeSection::Airing;
                             self.section_selected = 0;
+                            self.compact_scroll = 0;
                             return;
                         }
                         HomeSection::Airing => {
@@ -143,8 +146,14 @@ impl AppState {
                             return;
                         }
                         HomeSection::Airing => {}
-                        HomeSection::Popular => self.home_section = HomeSection::Airing,
-                        HomeSection::Favorite => self.home_section = HomeSection::Popular,
+                        HomeSection::Popular => {
+                            self.home_section = HomeSection::Airing;
+                            self.compact_scroll = 0;
+                        }
+                        HomeSection::Favorite => {
+                            self.home_section = HomeSection::Popular;
+                            self.compact_scroll = 0;
+                        }
                     }
                     return;
                 }
@@ -164,8 +173,14 @@ impl AppState {
                                 (self.selected + 1).min(self.results.len().saturating_sub(1));
                             return;
                         }
-                        HomeSection::Airing => self.home_section = HomeSection::Popular,
-                        HomeSection::Popular => self.home_section = HomeSection::Favorite,
+                        HomeSection::Airing => {
+                            self.home_section = HomeSection::Popular;
+                            self.compact_scroll = 0;
+                        }
+                        HomeSection::Popular => {
+                            self.home_section = HomeSection::Favorite;
+                            self.compact_scroll = 0;
+                        }
                         HomeSection::Favorite => {}
                     }
                     return;
