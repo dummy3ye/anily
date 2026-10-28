@@ -11,6 +11,8 @@ pub struct Anime {
     pub episodes: Option<u32>,
     pub status: String,
     pub genres: Vec<String>,
+    pub sub_episodes: Option<u32>,
+    pub dub_episodes: Option<u32>,
     pub cover_art: Option<CoverArt>,
 }
 
@@ -178,11 +180,32 @@ pub async fn home_feed(client: &Client, exclude_list: &[String]) -> Result<HomeF
         .json()
         .await
         .context("decoding AniList home feed")?;
+
+    let counts = crate::providers::hianime::scrape_home_counts(client).await;
+    let attach_counts = |mut list: Vec<Anime>| -> Vec<Anime> {
+        for anime in list.iter_mut() {
+            let norm = crate::providers::hianime::normalize_title(&anime.title);
+            if let Some(c) = counts.get(&norm) {
+                anime.sub_episodes = c.sub;
+                anime.dub_episodes = c.dub;
+            }
+        }
+        list
+    };
+
     Ok(HomeFeed {
-        trending: page_to_anime(response.data.trending.context("missing trending feed")?),
-        airing: page_to_anime(response.data.airing.context("missing airing feed")?),
-        popular: page_to_anime(response.data.popular.context("missing popular feed")?),
-        favorite: page_to_anime(response.data.favorite.context("missing favorite feed")?),
+        trending: attach_counts(page_to_anime(
+            response.data.trending.context("missing trending feed")?,
+        )),
+        airing: attach_counts(page_to_anime(
+            response.data.airing.context("missing airing feed")?,
+        )),
+        popular: attach_counts(page_to_anime(
+            response.data.popular.context("missing popular feed")?,
+        )),
+        favorite: attach_counts(page_to_anime(
+            response.data.favorite.context("missing favorite feed")?,
+        )),
     })
 }
 
@@ -216,6 +239,8 @@ fn page_to_anime(page: Page) -> Vec<Anime> {
                 episodes: media.episodes,
                 status: media.status.unwrap_or_else(|| "UNKNOWN".to_string()),
                 genres,
+                sub_episodes: None,
+                dub_episodes: None,
                 cover_art: None,
             }
         })

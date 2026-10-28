@@ -25,6 +25,72 @@ pub struct Stream {
     pub referer: String,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct EpisodeCounts {
+    pub sub: Option<u32>,
+    pub dub: Option<u32>,
+}
+
+pub fn normalize_title(title: &str) -> String {
+    title
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                ' '
+            }
+        })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+pub async fn scrape_home_counts(
+    client: &Client,
+) -> std::collections::HashMap<String, EpisodeCounts> {
+    use std::collections::HashMap;
+
+    let mut map = HashMap::new();
+    let Ok(resp) = client.get(format!("{BASE}/home")).send().await else {
+        return map;
+    };
+    let Ok(html) = resp.text().await else {
+        return map;
+    };
+
+    let document = Html::parse_document(&html);
+    let item_sel = Selector::parse(".film-detail, .flw-item, li").expect("valid selector");
+    let name_sel =
+        Selector::parse(".film-name, .film-title, .dynamic-name").expect("valid selector");
+    let sub_sel = Selector::parse(".tick-sub").expect("valid selector");
+    let dub_sel = Selector::parse(".tick-dub").expect("valid selector");
+
+    for item in document.select(&item_sel) {
+        if let Some(name_el) = item.select(&name_sel).next() {
+            let name = name_el.text().collect::<String>().trim().to_string();
+            let sub = item
+                .select(&sub_sel)
+                .next()
+                .and_then(|el| el.text().collect::<String>().trim().parse::<u32>().ok());
+            let dub = item
+                .select(&dub_sel)
+                .next()
+                .and_then(|el| el.text().collect::<String>().trim().parse::<u32>().ok());
+
+            if sub.is_some() || dub.is_some() {
+                let norm = normalize_title(&name);
+                if !norm.is_empty() {
+                    map.entry(norm).or_insert(EpisodeCounts { sub, dub });
+                }
+            }
+        }
+    }
+
+    map
+}
+
 pub async fn search(client: &Client, query: &str) -> Result<Vec<Match>> {
     let html = client
         .get(format!("{BASE}/search"))

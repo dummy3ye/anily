@@ -322,19 +322,44 @@ fn draw_cards(frame: &mut Frame<'_>, app: &mut App, area: Rect) {
                 height: 1,
             },
         );
-        let metadata = Line::from(vec![
-            Span::styled(
-                anime.status.to_lowercase(),
-                Style::default().fg(Color::Gray),
-            ),
-            Span::raw("  "),
-            Span::styled(
+        let mut meta_spans = vec![Span::styled(
+            anime.status.to_lowercase(),
+            Style::default().fg(Color::Gray),
+        )];
+
+        if let Some(sub) = anime.sub_episodes {
+            meta_spans.push(Span::raw(" "));
+            meta_spans.push(Span::styled(
+                format!(" CC {sub} "),
+                Style::default()
+                    .bg(Color::Rgb(180, 240, 190))
+                    .fg(Color::Rgb(20, 40, 25))
+                    .add_modifier(Modifier::BOLD),
+            ));
+        }
+
+        if let Some(dub) = anime.dub_episodes {
+            meta_spans.push(Span::raw(" "));
+            meta_spans.push(Span::styled(
+                format!(" 🎤 {dub} "),
+                Style::default()
+                    .bg(Color::Rgb(190, 225, 250))
+                    .fg(Color::Rgb(20, 35, 55))
+                    .add_modifier(Modifier::BOLD),
+            ));
+        }
+
+        if anime.sub_episodes.is_none() && anime.dub_episodes.is_none() {
+            meta_spans.push(Span::raw("  "));
+            meta_spans.push(Span::styled(
                 anime
                     .episodes
                     .map_or_else(|| "? eps".to_string(), |n| format!("{n} eps")),
                 Style::default().fg(Color::Gray),
-            ),
-        ]);
+            ));
+        }
+
+        let metadata = Line::from(meta_spans);
         frame.render_widget(
             Paragraph::new(metadata).style(if selected {
                 Style::default().bg(Color::Rgb(35, 45, 75))

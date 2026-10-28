@@ -92,6 +92,8 @@ mod tests {
             episodes: None,
             status: "RELEASING".to_string(),
             genres: vec!["Ecchi".to_string()],
+            sub_episodes: None,
+            dub_episodes: None,
             cover_art: None,
         };
 
@@ -103,6 +105,8 @@ mod tests {
             episodes: None,
             status: "RELEASING".to_string(),
             genres: vec!["Comedy".to_string()],
+            sub_episodes: None,
+            dub_episodes: None,
             cover_art: None,
         };
 
@@ -114,6 +118,8 @@ mod tests {
             episodes: None,
             status: "RELEASING".to_string(),
             genres: vec!["Comedy".to_string(), "Action".to_string()],
+            sub_episodes: None,
+            dub_episodes: None,
             cover_art: None,
         };
 
