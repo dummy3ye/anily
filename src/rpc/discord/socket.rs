@@ -1,9 +1,16 @@
+// Platform-specific IPC stream type
+#[cfg(unix)]
+pub type IpcStream = std::os::unix::net::UnixStream;
+
+#[cfg(windows)]
+pub type IpcStream = std::fs::File;
+
+// Unix implementation – keep existing lookup logic
 #[cfg(unix)]
 pub fn find_socket() -> Option<std::path::PathBuf> {
     use std::path::PathBuf;
 
     let uid = unsafe { libc::getuid() };
-
     let mut dirs: Vec<PathBuf> = Vec::new();
 
     if let Some(xdg) = std::env::var_os("XDG_RUNTIME_DIR") {
@@ -39,10 +46,9 @@ pub fn find_socket() -> Option<std::path::PathBuf> {
 }
 
 #[cfg(unix)]
-pub fn connect_socket(path: &std::path::Path) -> Option<std::os::unix::net::UnixStream> {
+pub fn connect_socket(path: &std::path::Path) -> Option<IpcStream> {
     use std::os::unix::net::UnixStream;
     use std::time::Duration;
-
     let stream = UnixStream::connect(path).ok()?;
     let timeout = Some(Duration::from_secs(5));
     stream.set_read_timeout(timeout).ok()?;
@@ -51,11 +57,13 @@ pub fn connect_socket(path: &std::path::Path) -> Option<std::os::unix::net::Unix
 }
 
 #[cfg(windows)]
-pub fn find_socket() -> Option<std::path::PathBuf> {
-    None // Windows uses named pipes; not yet supported
-}
-
-#[cfg(windows)]
-pub fn connect_socket(_path: &std::path::Path) -> Option<std::os::unix::net::UnixStream> {
+pub fn connect() -> Option<IpcStream> {
+    use std::fs::OpenOptions;
+    for i in 0..10 {
+        let pipe = format!(r"\\?\pipe\discord-ipc-{i}");
+        if let Ok(file) = OpenOptions::new().read(true).write(true).open(&pipe) {
+            return Some(file);
+        }
+    }
     None
 }

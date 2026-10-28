@@ -6,13 +6,12 @@ use std::io::{Read, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct DiscordRpc {
-    stream: std::os::unix::net::UnixStream,
+    stream: socket::IpcStream,
 }
 
 impl DiscordRpc {
     pub fn connect(client_id: &str) -> Option<Self> {
-        let path = socket::find_socket()?;
-        let mut stream = socket::connect_socket(&path)?;
+        let mut stream = socket::connect()?;
 
         let handshake = json!({ "v": 1, "client_id": client_id }).to_string();
         write_frame(&mut stream, 0, &handshake).ok()?;
@@ -52,10 +51,7 @@ impl DiscordRpc {
 
         let payload = json!({
             "cmd": "SET_ACTIVITY",
-            "args": {
-                "pid": pid,
-                "activity": activity
-            },
+            "args": { "pid": pid, "activity": activity },
             "nonce": format!("{pid}-{now}")
         });
 
@@ -82,11 +78,7 @@ impl Drop for DiscordRpc {
     }
 }
 
-fn write_frame(
-    stream: &mut std::os::unix::net::UnixStream,
-    opcode: u32,
-    payload: &str,
-) -> std::io::Result<()> {
+fn write_frame(stream: &mut socket::IpcStream, opcode: u32, payload: &str) -> std::io::Result<()> {
     let data = payload.as_bytes();
     let mut frame = Vec::with_capacity(8 + data.len());
     frame.extend_from_slice(&opcode.to_le_bytes());
@@ -96,7 +88,7 @@ fn write_frame(
     stream.flush()
 }
 
-fn read_frame(stream: &mut std::os::unix::net::UnixStream) -> std::io::Result<(u32, String)> {
+fn read_frame(stream: &mut socket::IpcStream) -> std::io::Result<(u32, String)> {
     let mut header = [0u8; 8];
     stream.read_exact(&mut header)?;
     let opcode = u32::from_le_bytes(header[0..4].try_into().unwrap());
