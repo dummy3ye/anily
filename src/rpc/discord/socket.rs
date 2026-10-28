@@ -1,13 +1,11 @@
-// Platform-specific IPC stream type
 #[cfg(unix)]
 pub type IpcStream = std::os::unix::net::UnixStream;
 
 #[cfg(windows)]
 pub type IpcStream = std::fs::File;
 
-// Unix implementation – keep existing lookup logic
 #[cfg(unix)]
-pub fn find_socket() -> Option<std::path::PathBuf> {
+fn find_socket() -> Option<std::path::PathBuf> {
     use std::path::PathBuf;
 
     let uid = unsafe { libc::getuid() };
@@ -46,14 +44,19 @@ pub fn find_socket() -> Option<std::path::PathBuf> {
 }
 
 #[cfg(unix)]
-pub fn connect_socket(path: &std::path::Path) -> Option<IpcStream> {
-    use std::os::unix::net::UnixStream;
+fn connect_socket(path: &std::path::Path) -> Option<IpcStream> {
     use std::time::Duration;
-    let stream = UnixStream::connect(path).ok()?;
+    let stream = IpcStream::connect(path).ok()?;
     let timeout = Some(Duration::from_secs(5));
     stream.set_read_timeout(timeout).ok()?;
     stream.set_write_timeout(timeout).ok()?;
     Some(stream)
+}
+
+#[cfg(unix)]
+pub fn connect() -> Option<IpcStream> {
+    let path = find_socket()?;
+    connect_socket(&path)
 }
 
 #[cfg(windows)]
