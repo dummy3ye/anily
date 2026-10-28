@@ -2,6 +2,10 @@
 name = "anily"
 version = "0.1.2"
 edition = "2021"
+repository = "https://github.com/dummy3ye/anily"
+homepage = "https://github.com/dummy3ye/anily"
+description = "A fast terminal-based anime streaming and discovery CLI"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 ratatui = "0.30"
@@ -26,3 +30,8 @@ libc = "0.2"
 opt-level = "z"
 codegen-units = 1
 lto = true
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
