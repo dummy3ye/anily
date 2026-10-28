@@ -1,4 +1,4 @@
-.PHONY: all build release test run clean fmt clippy check install changelog changelog-preview help
+.PHONY: all build release test run clean fmt fmt-check clippy check lint fix install changelog changelog-preview help
 
 BIN := anily
 SRC := src
@@ -16,9 +16,12 @@ help:
 	@echo "  test           Run cargo test"
 	@echo "  run            Run the debug binary"
 	@echo "  clean          Remove target directory"
-	@echo "  fmt            Format with rustfmt"
+	@echo "  fmt            Format codebase with rustfmt"
+	@echo "  fmt-check      Verify formatting (used in CI)"
 	@echo "  clippy         Run clippy linter"
 	@echo "  check          Check with cargo check"
+	@echo "  lint           Run formatting check and clippy"
+	@echo "  fix            Auto-format and auto-fix clippy issues"
 	@echo "  install        Install binary to ~/.cargo/bin"
 	@echo "  changelog      Generate CHANGELOG.md"
 	@echo "  changelog-preview  Preview changelog"
@@ -39,16 +42,21 @@ clean:
 	rm -rf $(TARGET_DIR)
 
 fmt:
-	cargo fmt -- --check
+	cargo fmt --all
 
-fmt-fix:
-	cargo fmt
+fmt-check:
+	cargo fmt --all -- --check
 
 clippy:
 	cargo clippy --bin $(BIN) -- -D warnings
 
 check:
 	cargo check --bin $(BIN)
+
+lint: fmt-check clippy
+
+fix: fmt
+	cargo clippy --fix --allow-dirty --allow-staged
 
 install: release
 	mkdir -p $(HOME)/.cargo/bin
