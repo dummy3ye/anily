@@ -1,6 +1,38 @@
 # Changelog
 
 All notable changes to Anily are documented here.
+## Unreleased
+
+
+### Bug Fixes
+
+
+- Update all sections for same anime id and add secondary large fallback
+([b7f4187](https://github.com/dummy3ye/anily/commit/b7f4187204e95df5b248864503059e05831e54ef))
+
+- Remove ghost highlight from selection while being in home screen
+([9f047a5](https://github.com/dummy3ye/anily/commit/9f047a5cbfd71821a72764fe7d75dc8aaad29d89))
+
+- Make to more durable
+([e093e64](https://github.com/dummy3ye/anily/commit/e093e643a5480b1a333e7299a8ba0252bff383b7))
+
+- Fix search navigation and esc handling
+([a692371](https://github.com/dummy3ye/anily/commit/a692371ab4129d0c5592c04ff1ec3d94a1f79174))
+
+
+### Features
+
+
+- Added configuation soupport with toml config file
+([8371b3d](https://github.com/dummy3ye/anily/commit/8371b3d96e647ae1a1fd73a93d713ab93de7239e))
+
+
+### Other
+
+
+- Rewrite the discord rpc to work for all type of discord installation
+([9f0509f](https://github.com/dummy3ye/anily/commit/9f0509f2a272d0977b3be305942cdda610549a6b))
+
 ## v0.1.1
 
 

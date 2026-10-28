@@ -40,13 +40,10 @@ impl App {
             })),
             episode_task: None,
             mpv_process: None,
-            discord: {
-                let discord_rpc = crate::config::Config::load()
-                    .ok()
-                    .and_then(|cfg| cfg.discord_client_id)
-                    .and_then(|id| crate::rpc::discord::DiscordRpc::connect(&id));
-                discord_rpc
-            },
+            discord: crate::config::Config::load()
+                .ok()
+                .and_then(|cfg| cfg.discord_client_id)
+                .and_then(|id| crate::rpc::discord::DiscordRpc::connect(&id)),
         })
     }
 
@@ -451,7 +448,7 @@ impl App {
         if let Some(discord) = self.discord.as_mut() {
             let cover_url = self.state.selected_anime.as_ref().and_then(|anime| {
                 if anime.cover.is_empty() {
-                    anime.cover_large.as_ref().map(|s| s.as_str())
+                    anime.cover_large.as_deref()
                 } else {
                     Some(anime.cover.as_str())
                 }
