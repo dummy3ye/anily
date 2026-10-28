@@ -1,6 +1,8 @@
 pub mod app;
 pub mod config;
 pub mod error;
+pub mod filter;
+pub mod genre;
 pub mod providers;
 pub mod rpc;
 pub mod ui;

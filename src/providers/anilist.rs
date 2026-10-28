@@ -10,6 +10,7 @@ pub struct Anime {
     pub cover_large: Option<String>,
     pub episodes: Option<u32>,
     pub status: String,
+    pub genres: Vec<String>,
     pub cover_art: Option<CoverArt>,
 }
 
@@ -69,6 +70,15 @@ struct Media {
     cover_image: Cover,
     episodes: Option<u32>,
     status: Option<String>,
+    #[serde(default)]
+    genres: Vec<String>,
+    #[serde(default)]
+    tags: Vec<Tag>,
+}
+
+#[derive(Deserialize)]
+struct Tag {
+    name: String,
 }
 
 #[derive(Deserialize)]
@@ -89,7 +99,7 @@ pub async fn search(client: &Client, query: &str) -> Result<Vec<Anime>> {
     let response = client
         .post("https://graphql.anilist.co")
         .json(&serde_json::json!({
-            "query": "query ($search: String!) { Page(perPage: 24) { media(search: $search, type: ANIME, sort: SEARCH_MATCH) { id title { romaji english native } coverImage { extraLarge large } episodes status } } }",
+            "query": "query ($search: String!) { Page(perPage: 24) { media(search: $search, type: ANIME, sort: SEARCH_MATCH) { id title { romaji english native } coverImage { extraLarge large } episodes status genres tags { name } } } }",
             "variables": { "search": query }
         }))
         .send()
@@ -108,7 +118,7 @@ pub async fn trending(client: &Client) -> Result<Vec<Anime>> {
     let response = client
         .post("https://graphql.anilist.co")
         .json(&serde_json::json!({
-            "query": "query { Page(perPage: 24) { media(type: ANIME, sort: TRENDING_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status } } }"
+            "query": "query { Page(perPage: 24) { media(type: ANIME, sort: TRENDING_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres tags { name } } } }"
         }))
         .send()
         .await
@@ -126,7 +136,7 @@ pub async fn home_feed(client: &Client) -> Result<HomeFeed> {
     let response: Response = client
         .post("https://graphql.anilist.co")
         .json(&serde_json::json!({
-            "query": "query { trending: Page(perPage: 12) { media(type: ANIME, sort: TRENDING_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status } } airing: Page(perPage: 5) { media(type: ANIME, status: RELEASING, sort: UPDATED_AT_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status } } popular: Page(perPage: 5) { media(type: ANIME, sort: POPULARITY_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status } } favorite: Page(perPage: 5) { media(type: ANIME, sort: FAVOURITES_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status } } }"
+            "query": "query { trending: Page(perPage: 30) { media(type: ANIME, sort: TRENDING_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres tags { name } } } airing: Page(perPage: 25) { media(type: ANIME, status: RELEASING, sort: UPDATED_AT_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres tags { name } } } popular: Page(perPage: 25) { media(type: ANIME, sort: POPULARITY_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres tags { name } } } favorite: Page(perPage: 25) { media(type: ANIME, sort: FAVOURITES_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres tags { name } } } }"
         }))
         .send()
         .await
@@ -153,19 +163,29 @@ async fn media_to_anime(response: Response) -> Result<Vec<Anime>> {
 fn page_to_anime(page: Page) -> Vec<Anime> {
     page.media
         .into_iter()
-        .map(|media| Anime {
-            id: media.id,
-            title: media
-                .title
-                .english
-                .or(media.title.romaji)
-                .or(media.title.native)
-                .unwrap_or_else(|| "Untitled".to_string()),
-            cover: media.cover_image.extra_large.unwrap_or_default(),
-            cover_large: media.cover_image.large,
-            episodes: media.episodes,
-            status: media.status.unwrap_or_else(|| "UNKNOWN".to_string()),
-            cover_art: None,
+        .map(|media| {
+            let mut genres = media.genres;
+            for tag in media.tags {
+                if !genres.iter().any(|g| g.eq_ignore_ascii_case(&tag.name)) {
+                    genres.push(tag.name);
+                }
+            }
+
+            Anime {
+                id: media.id,
+                title: media
+                    .title
+                    .english
+                    .or(media.title.romaji)
+                    .or(media.title.native)
+                    .unwrap_or_else(|| "Untitled".to_string()),
+                cover: media.cover_image.extra_large.unwrap_or_default(),
+                cover_large: media.cover_image.large,
+                episodes: media.episodes,
+                status: media.status.unwrap_or_else(|| "UNKNOWN".to_string()),
+                genres,
+                cover_art: None,
+            }
         })
         .collect()
 }

@@ -14,6 +14,7 @@ type EpisodeLookup = Result<(String, Vec<crate::providers::hianime::Episode>)>;
 
 pub struct App {
     pub state: AppState,
+    pub config: crate::config::Config,
     client: Client,
     pub picker: Picker,
     pub cover_protocols: HashMap<(u32, u16, u16), Protocol>,
@@ -27,9 +28,16 @@ pub struct App {
 
 impl App {
     pub fn new() -> Result<Self> {
+        let config = crate::config::Config::load().unwrap_or_default();
+        let discord = config
+            .discord_client_id
+            .as_deref()
+            .and_then(crate::rpc::discord::DiscordRpc::connect);
+
         Ok(Self {
             exit_prompt: false,
             state: AppState::new(),
+            config,
             client: Client::builder().user_agent("anily/0.1").build()?,
             picker: Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks()),
             cover_protocols: HashMap::new(),
@@ -40,11 +48,18 @@ impl App {
             })),
             episode_task: None,
             mpv_process: None,
-            discord: crate::config::Config::load()
-                .ok()
-                .and_then(|cfg| cfg.discord_client_id)
-                .and_then(|id| crate::rpc::discord::DiscordRpc::connect(&id)),
+            discord,
         })
+    }
+
+    fn apply_home_feed(&mut self, feed: crate::providers::anilist::HomeFeed) {
+        self.state.results =
+            crate::filter::filter_anime(feed.trending, &self.config.exclude_genres);
+        self.state.airing = crate::filter::filter_anime(feed.airing, &self.config.exclude_genres);
+        self.state.popular =
+            crate::filter::filter_anime(feed.popular, &self.config.exclude_genres);
+        self.state.favorite =
+            crate::filter::filter_anime(feed.favorite, &self.config.exclude_genres);
     }
 
     pub async fn poll_background(&mut self) {
@@ -61,10 +76,7 @@ impl App {
             if let Some(task) = self.home_task.take() {
                 match task.await {
                     Ok(Ok(feed)) => {
-                        self.state.results = feed.trending;
-                        self.state.airing = feed.airing;
-                        self.state.popular = feed.popular;
-                        self.state.favorite = feed.favorite;
+                        self.apply_home_feed(feed);
                         self.state.loading = false;
                     }
                     Ok(Err(error)) => {
@@ -266,10 +278,7 @@ impl App {
                 self.state.loading = true;
                 self.state.error = None;
                 if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
-                    self.state.results = feed.trending;
-                    self.state.airing = feed.airing;
-                    self.state.popular = feed.popular;
-                    self.state.favorite = feed.favorite;
+                    self.apply_home_feed(feed);
                 }
                 self.state.loading = false;
                 return Ok(false);
@@ -285,10 +294,7 @@ impl App {
                     self.state.loading = true;
                     self.state.error = None;
                     if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
-                        self.state.results = feed.trending;
-                        self.state.airing = feed.airing;
-                        self.state.popular = feed.popular;
-                        self.state.favorite = feed.favorite;
+                        self.apply_home_feed(feed);
                     }
                     self.state.loading = false;
                     return Ok(false);
@@ -304,10 +310,7 @@ impl App {
                     self.state.loading = true;
                     self.state.error = None;
                     if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
-                        self.state.results = feed.trending;
-                        self.state.airing = feed.airing;
-                        self.state.popular = feed.popular;
-                        self.state.favorite = feed.favorite;
+                        self.apply_home_feed(feed);
                     }
                     self.state.loading = false;
                     return Ok(false);
@@ -322,10 +325,7 @@ impl App {
                     self.state.loading = true;
                     self.state.error = None;
                     if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
-                        self.state.results = feed.trending;
-                        self.state.airing = feed.airing;
-                        self.state.popular = feed.popular;
-                        self.state.favorite = feed.favorite;
+                        self.apply_home_feed(feed);
                     }
                     self.state.loading = false;
                     return Ok(false);
@@ -350,9 +350,17 @@ impl App {
                         self.state.section_title = "Search results".to_string();
                         self.state.home_section = crate::app::state::HomeSection::Trending;
                         self.state.section_selected = 0;
-                        self.state.results =
+                        let search_results =
                             crate::providers::anilist::search(&self.client, &self.state.query)
                                 .await?;
+                        self.state.results = if self.config.filter_searches {
+                            crate::filter::filter_anime(
+                                search_results,
+                                &self.config.exclude_genres,
+                            )
+                        } else {
+                            search_results
+                        };
                         self.state.loading = false;
                         self.state.selected = 0;
                         self.state.scroll_row = 0;
