@@ -1,16 +1,9 @@
-// src/rpc/discord/socket.rs
-// Locate and connect to the Discord IPC socket.
-
-/// Search common locations for the Discord IPC socket.
-/// Tries `discord-ipc-{0..9}` under `XDG_RUNTIME_DIR`, `TMPDIR`, `/run/user/{uid}`,
-/// Flatpak paths, and `/tmp`.
 #[cfg(unix)]
 pub fn find_socket() -> Option<std::path::PathBuf> {
     use std::path::PathBuf;
 
     let uid = unsafe { libc::getuid() };
 
-    // Candidate parent directories, ordered by preference.
     let mut dirs: Vec<PathBuf> = Vec::new();
 
     if let Some(xdg) = std::env::var_os("XDG_RUNTIME_DIR") {
@@ -25,7 +18,6 @@ pub fn find_socket() -> Option<std::path::PathBuf> {
     }
     dirs.push(PathBuf::from("/tmp"));
 
-    // Also check Flatpak and Snap prefixed paths.
     let flatpak = PathBuf::from(format!("/run/user/{uid}/app/com.discordapp.Discord"));
     if flatpak.is_dir() {
         dirs.push(flatpak);
@@ -35,7 +27,6 @@ pub fn find_socket() -> Option<std::path::PathBuf> {
         dirs.push(snap);
     }
 
-    // Discord creates sockets named discord-ipc-0 through discord-ipc-9.
     for dir in &dirs {
         for i in 0..10 {
             let path = dir.join(format!("discord-ipc-{i}"));
@@ -47,7 +38,6 @@ pub fn find_socket() -> Option<std::path::PathBuf> {
     None
 }
 
-/// Connect to the Unix socket at `path` with a 5-second read/write timeout.
 #[cfg(unix)]
 pub fn connect_socket(path: &std::path::Path) -> Option<std::os::unix::net::UnixStream> {
     use std::os::unix::net::UnixStream;

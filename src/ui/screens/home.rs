@@ -239,6 +239,7 @@ fn draw_skeletons(frame: &mut Frame<'_>, area: Rect) {
 
 fn draw_cards(frame: &mut Frame<'_>, app: &mut App, area: Rect) {
     let columns = ((area.width / CARD_WIDTH).max(1)) as usize;
+    app.state.grid_columns = columns;
     let rows = ((area.height / CARD_HEIGHT).max(1)) as usize;
     let max_row = app.state.results.len().saturating_sub(1) / columns;
     if app.state.selected < app.state.scroll_row * columns {

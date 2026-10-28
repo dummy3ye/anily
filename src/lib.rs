@@ -1,8 +1,8 @@
 pub mod app;
 pub mod config;
-pub mod discord;
 pub mod error;
 pub mod providers;
+pub mod rpc;
 pub mod ui;
 
 use anyhow::Result;
@@ -12,7 +12,6 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 
 pub async fn run() -> Result<()> {
-    // Enter raw mode and alternate screen.
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     stdout.execute(crossterm::terminal::EnterAlternateScreen)?;
@@ -20,7 +19,6 @@ pub async fn run() -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
     terminal.clear()?;
 
-    // Initialise the application state.
     let mut app = app::App::new()?;
     loop {
         app.poll_background().await;

@@ -18,7 +18,9 @@ base64 = "0.22"
 scraper = "0.20"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
 ratatui-image = { version = "11", default-features = false, features = ["image-defaults", "crossterm"] }
-discord-rich-presence = "1.1"
+# toml crate for parsing config files
+toml = "0.8"
+libc = "0.2"
 
 [profile.release]
 opt-level = "z"

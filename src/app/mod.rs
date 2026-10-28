@@ -21,12 +21,14 @@ pub struct App {
     home_task: Option<JoinHandle<Result<crate::providers::anilist::HomeFeed>>>,
     episode_task: Option<JoinHandle<EpisodeLookup>>,
     mpv_process: Option<Child>,
-    discord: Option<crate::discord::DiscordRpc>,
+    discord: Option<crate::rpc::discord::DiscordRpc>,
+    pub exit_prompt: bool,
 }
 
 impl App {
     pub fn new() -> Result<Self> {
         Ok(Self {
+            exit_prompt: false,
             state: AppState::new(),
             client: Client::builder().user_agent("anily/0.1").build()?,
             picker: Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks()),
@@ -38,7 +40,13 @@ impl App {
             })),
             episode_task: None,
             mpv_process: None,
-            discord: crate::discord::DiscordRpc::from_environment(),
+            discord: {
+                let discord_rpc = crate::config::Config::load()
+                    .ok()
+                    .and_then(|cfg| cfg.discord_client_id)
+                    .and_then(|id| crate::rpc::discord::DiscordRpc::connect(&id));
+                discord_rpc
+            },
         })
     }
 
@@ -147,7 +155,11 @@ impl App {
                 let url = if !anime.cover.is_empty() {
                     Some(anime.cover.clone())
                 } else {
-                    anime.cover_large.as_ref().filter(|u| !u.is_empty()).cloned()
+                    anime
+                        .cover_large
+                        .as_ref()
+                        .filter(|u| !u.is_empty())
+                        .cloned()
                 };
                 if let Some(url) = url {
                     let client = self.client.clone();
@@ -168,7 +180,11 @@ impl App {
             let url = if !anime.cover.is_empty() {
                 Some(anime.cover.clone())
             } else {
-                anime.cover_large.as_ref().filter(|u| !u.is_empty()).cloned()
+                anime
+                    .cover_large
+                    .as_ref()
+                    .filter(|u| !u.is_empty())
+                    .cloned()
             };
             if let Some(url) = url {
                 let client = self.client.clone();
@@ -222,45 +238,144 @@ impl App {
     }
 
     pub async fn handle_key(&mut self, key: KeyEvent) -> Result<bool> {
-        if key.code == KeyCode::Esc {
-            if self.state.screen == Screen::Home {
-                return Ok(true);
+        if self.exit_prompt {
+            match key.code {
+                KeyCode::Char('y') | KeyCode::Char('Y') | KeyCode::Enter => return Ok(true),
+                KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                    self.exit_prompt = false;
+                    return Ok(false);
+                }
+                _ => return Ok(false),
             }
-            self.state.screen = Screen::Home;
-            return Ok(false);
         }
-        if key.code == KeyCode::Enter {
-            match self.state.screen {
-                Screen::Home if self.state.searching => {
-                    if self.state.query.trim().is_empty() {
-                        return Ok(false);
-                    }
+
+        if key.code == KeyCode::Esc {
+            if self.state.screen != Screen::Home {
+                self.state.screen = Screen::Home;
+                self.state.selected_anime = None;
+                self.state.details = None;
+                self.state.episodes.clear();
+                self.state.episode_selected = 0;
+                self.state.now_playing = None;
+                self.state.episode_error = None;
+                self.state.episode_loading = false;
+                self.state.searching = false;
+                self.state.section_title = "Trending".to_string();
+                self.state.query.clear();
+                self.state.home_section = crate::app::state::HomeSection::Trending;
+                self.state.section_selected = 0;
+                self.state.selected = 0;
+                self.state.scroll_row = 0;
+                self.state.loading = true;
+                self.state.error = None;
+                if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
+                    self.state.results = feed.trending;
+                    self.state.airing = feed.airing;
+                    self.state.popular = feed.popular;
+                    self.state.favorite = feed.favorite;
+                }
+                self.state.loading = false;
+                return Ok(false);
+            } else if self.state.screen == Screen::Home {
+                if self.state.section_title == "Search results" {
                     self.state.searching = false;
+                    self.state.section_title = "Trending".to_string();
+                    self.state.query.clear();
+                    self.state.home_section = crate::app::state::HomeSection::Trending;
+                    self.state.section_selected = 0;
+                    self.state.selected = 0;
+                    self.state.scroll_row = 0;
                     self.state.loading = true;
                     self.state.error = None;
-                    self.state.section_title = "Search results".to_string();
-                    self.state.results =
-                        crate::providers::anilist::search(&self.client, &self.state.query).await?;
+                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
+                        self.state.results = feed.trending;
+                        self.state.airing = feed.airing;
+                        self.state.popular = feed.popular;
+                        self.state.favorite = feed.favorite;
+                    }
                     self.state.loading = false;
-                    self.state.selected = 0;
+                    return Ok(false);
                 }
-                Screen::Home => self.load_episodes().await?,
-                Screen::Details => self.play_selected().await?,
-                Screen::Episodes => self.play_selected().await?,
+                if self.state.searching {
+                    self.state.searching = false;
+                    self.state.section_title = "Trending".to_string();
+                    self.state.query.clear();
+                    self.state.home_section = crate::app::state::HomeSection::Trending;
+                    self.state.section_selected = 0;
+                    self.state.selected = 0;
+                    self.state.scroll_row = 0;
+                    self.state.loading = true;
+                    self.state.error = None;
+                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
+                        self.state.results = feed.trending;
+                        self.state.airing = feed.airing;
+                        self.state.popular = feed.popular;
+                        self.state.favorite = feed.favorite;
+                    }
+                    self.state.loading = false;
+                    return Ok(false);
+                }
+                if !self.state.query.is_empty() {
+                    self.state.query.clear();
+                    self.state.section_title = "Trending".to_string();
+                    self.state.home_section = crate::app::state::HomeSection::Trending;
+                    self.state.section_selected = 0;
+                    self.state.selected = 0;
+                    self.state.scroll_row = 0;
+                    self.state.loading = true;
+                    self.state.error = None;
+                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
+                        self.state.results = feed.trending;
+                        self.state.airing = feed.airing;
+                        self.state.popular = feed.popular;
+                        self.state.favorite = feed.favorite;
+                    }
+                    self.state.loading = false;
+                    return Ok(false);
+                }
             }
-            return Ok(false);
         }
-        if key.code == KeyCode::Char('q') && (!self.state.searching || self.state.query.is_empty())
-        {
-            return Ok(true);
+
+        match key.code {
+            KeyCode::Char('q') if (!self.state.searching || self.state.query.is_empty()) => {
+                self.exit_prompt = true;
+                Ok(false)
+            }
+            KeyCode::Enter => {
+                match self.state.screen {
+                    Screen::Home if self.state.searching => {
+                        if self.state.query.trim().is_empty() {
+                            return Ok(false);
+                        }
+                        self.state.searching = false;
+                        self.state.loading = true;
+                        self.state.error = None;
+                        self.state.section_title = "Search results".to_string();
+                        self.state.home_section = crate::app::state::HomeSection::Trending;
+                        self.state.section_selected = 0;
+                        self.state.results =
+                            crate::providers::anilist::search(&self.client, &self.state.query)
+                                .await?;
+                        self.state.loading = false;
+                        self.state.selected = 0;
+                        self.state.scroll_row = 0;
+                    }
+                    Screen::Home => self.load_episodes().await?,
+                    Screen::Details | Screen::Episodes => self.play_selected().await?,
+                }
+                Ok(false)
+            }
+            KeyCode::Char('/') if self.state.screen == Screen::Home => {
+                self.state.searching = true;
+                self.state.query.clear();
+                self.state.section_title = "Search".to_string();
+                Ok(false)
+            }
+            _ => {
+                self.state.handle_key(key);
+                Ok(false)
+            }
         }
-        if key.code == KeyCode::Char('/') && self.state.screen == Screen::Home {
-            self.state.searching = true;
-            self.state.query.clear();
-            return Ok(false);
-        }
-        self.state.handle_key(key);
-        Ok(false)
     }
 
     async fn load_episodes(&mut self) -> Result<()> {
@@ -285,8 +400,6 @@ impl App {
         self.state.screen = Screen::Details;
         self.state.loading = false;
 
-        // HiAnime is playback-only. Its availability or slug format must not
-        // prevent the AniList metadata screen from opening.
         self.state.episodes.clear();
         self.state.hianime_id = None;
         let client = self.client.clone();
@@ -336,13 +449,20 @@ impl App {
         self.mpv_process = Some(command.spawn().context("starting mpv")?);
         self.state.now_playing = Some(selected);
         if let Some(discord) = self.discord.as_mut() {
+            let cover_url = self.state.selected_anime.as_ref().and_then(|anime| {
+                if anime.cover.is_empty() {
+                    anime.cover_large.as_ref().map(|s| s.as_str())
+                } else {
+                    Some(anime.cover.as_str())
+                }
+            });
             discord.set_episode(
                 self.state
                     .selected_anime
                     .as_ref()
                     .map_or("Anime", |anime| anime.title.as_str()),
                 &episode.number,
-                None,
+                cover_url,
             )?;
         }
         Ok(())
