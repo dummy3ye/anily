@@ -1,0 +1,20 @@
+# Example / Schema configuration for Anily
+# Place this file at ~/.config/anily/config.toml (or $XDG_CONFIG_HOME/anily/config.toml)
+
+# Discord Rich Presence Application ID (optional)
+# Obtain an ID from the Discord Developer Portal: https://discord.com/developers/applications
+# discord_client_id = "123456789012345678"
+
+# Exclude specific genres or tags (optional, defaults to empty: [])
+# Any anime matching these in their AniList genres, AniList tags, or title words
+# will be filtered out from feed sections (Trending, Airing, Popular, Favorite).
+# Matching is case-insensitive and supports aliases (e.g., "ntr" matches "Netorare").
+#
+# Examples:
+# exclude_genres = ["Hentai", "Adult", "Ecchi", "ntr"]
+exclude_genres = []
+
+# Whether to apply the exclude filter when manually searching for anime (optional, defaults to false)
+# - false: Manual searches remain unfiltered so users can explicitly find and watch any title.
+# - true:  Manual searches will also omit titles matching `exclude_genres`.
+filter_searches = false

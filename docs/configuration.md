@@ -13,6 +13,12 @@ The config file is optional. If it doesn't exist, Anily will use defaults.
 ```toml
 # Discord Rich Presence Application ID
 discord_client_id = "123456789012345678"
+
+# Exclude specific genres or tags from anime feeds (e.g. "Hentai", "Ecchi", "NTR")
+exclude_genres = ["Hentai", "Adult", "Ecchi", "ntr"]
+
+# Whether to apply the exclude filter to manual search results as well (defaults to false)
+filter_searches = false
 ```
 
 ### Options
@@ -20,6 +26,8 @@ discord_client_id = "123456789012345678"
 | Option | Type | Required | Description |
 | --- | --- | --- | --- |
 | `discord_client_id` | `string` | No | Discord Application ID for Rich Presence. Get one from the [Discord Developer Portal](https://discord.com/developers/applications). |
+| `exclude_genres` | `array of strings` | No | List of genres or tags to filter out from feeds. Case-insensitive, supports aliases like `ntr` -> `Netorare`. Defaults to `[]`. |
+| `filter_searches` | `boolean` | No | Whether `exclude_genres` should also apply when manually searching for anime. Defaults to `false` (allowing users to search and watch specific titles directly). |
 
 ## Environment Variables
 

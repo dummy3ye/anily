@@ -5,6 +5,10 @@ use std::path::PathBuf;
 #[derive(Debug, Default, Clone, Deserialize)]
 pub struct Config {
     pub discord_client_id: Option<String>,
+    #[serde(default)]
+    pub exclude_genres: Vec<String>,
+    #[serde(default)]
+    pub filter_searches: bool,
 }
 
 impl Config {
