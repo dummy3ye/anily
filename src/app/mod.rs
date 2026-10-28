@@ -281,7 +281,10 @@ impl App {
                 self.state.scroll_row = 0;
                 self.state.loading = true;
                 self.state.error = None;
-                if let Ok(feed) = crate::providers::anilist::home_feed(&self.client, &self.config.exclude_genres).await {
+                if let Ok(feed) =
+                    crate::providers::anilist::home_feed(&self.client, &self.config.exclude_genres)
+                        .await
+                {
                     self.apply_home_feed(feed);
                 }
                 self.state.loading = false;
@@ -297,7 +300,12 @@ impl App {
                     self.state.scroll_row = 0;
                     self.state.loading = true;
                     self.state.error = None;
-                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client, &self.config.exclude_genres).await {
+                    if let Ok(feed) = crate::providers::anilist::home_feed(
+                        &self.client,
+                        &self.config.exclude_genres,
+                    )
+                    .await
+                    {
                         self.apply_home_feed(feed);
                     }
                     self.state.loading = false;
@@ -313,7 +321,12 @@ impl App {
                     self.state.scroll_row = 0;
                     self.state.loading = true;
                     self.state.error = None;
-                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client, &self.config.exclude_genres).await {
+                    if let Ok(feed) = crate::providers::anilist::home_feed(
+                        &self.client,
+                        &self.config.exclude_genres,
+                    )
+                    .await
+                    {
                         self.apply_home_feed(feed);
                     }
                     self.state.loading = false;
@@ -328,7 +341,12 @@ impl App {
                     self.state.scroll_row = 0;
                     self.state.loading = true;
                     self.state.error = None;
-                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client, &self.config.exclude_genres).await {
+                    if let Ok(feed) = crate::providers::anilist::home_feed(
+                        &self.client,
+                        &self.config.exclude_genres,
+                    )
+                    .await
+                    {
                         self.apply_home_feed(feed);
                     }
                     self.state.loading = false;
