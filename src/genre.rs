@@ -1,5 +1,17 @@
 use crate::providers::anilist::Anime;
 
+/// Expands an excluded genre or tag to include known aliases (e.g., "ntr" -> "NTR", "Netorare").
+pub fn expand_tag_aliases(name: &str) -> Vec<String> {
+    let lower = name.trim().to_lowercase();
+    let mut list = vec![name.trim().to_string()];
+    if lower == "ntr" {
+        list.push("Netorare".to_string());
+    } else if lower == "netorare" {
+        list.push("NTR".to_string());
+    }
+    list
+}
+
 /// Determines if a genre or tag string matches an exclusion pattern.
 /// Matches are case-insensitive and handle aliases (e.g. "ntr" <-> "netorare").
 pub fn matches_genre_or_tag(target: &str, pattern: &str) -> bool {

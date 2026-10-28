@@ -34,6 +34,14 @@ impl App {
             .as_deref()
             .and_then(crate::rpc::discord::DiscordRpc::connect);
 
+        let home_task = {
+            let client = Client::builder().user_agent("anily/0.1").build()?;
+            let exclude = config.exclude_genres.clone();
+            Some(tokio::spawn(async move {
+                crate::providers::anilist::home_feed(&client, &exclude).await
+            }))
+        };
+
         Ok(Self {
             exit_prompt: false,
             state: AppState::new(),
@@ -42,10 +50,7 @@ impl App {
             picker: Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks()),
             cover_protocols: HashMap::new(),
             cover_tasks: HashMap::new(),
-            home_task: Some(tokio::spawn({
-                let client = Client::builder().user_agent("anily/0.1").build()?;
-                async move { crate::providers::anilist::home_feed(&client).await }
-            })),
+            home_task,
             episode_task: None,
             mpv_process: None,
             discord,
@@ -56,8 +61,7 @@ impl App {
         self.state.results =
             crate::filter::filter_anime(feed.trending, &self.config.exclude_genres);
         self.state.airing = crate::filter::filter_anime(feed.airing, &self.config.exclude_genres);
-        self.state.popular =
-            crate::filter::filter_anime(feed.popular, &self.config.exclude_genres);
+        self.state.popular = crate::filter::filter_anime(feed.popular, &self.config.exclude_genres);
         self.state.favorite =
             crate::filter::filter_anime(feed.favorite, &self.config.exclude_genres);
     }
@@ -277,7 +281,7 @@ impl App {
                 self.state.scroll_row = 0;
                 self.state.loading = true;
                 self.state.error = None;
-                if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
+                if let Ok(feed) = crate::providers::anilist::home_feed(&self.client, &self.config.exclude_genres).await {
                     self.apply_home_feed(feed);
                 }
                 self.state.loading = false;
@@ -293,7 +297,7 @@ impl App {
                     self.state.scroll_row = 0;
                     self.state.loading = true;
                     self.state.error = None;
-                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
+                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client, &self.config.exclude_genres).await {
                         self.apply_home_feed(feed);
                     }
                     self.state.loading = false;
@@ -309,7 +313,7 @@ impl App {
                     self.state.scroll_row = 0;
                     self.state.loading = true;
                     self.state.error = None;
-                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
+                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client, &self.config.exclude_genres).await {
                         self.apply_home_feed(feed);
                     }
                     self.state.loading = false;
@@ -324,7 +328,7 @@ impl App {
                     self.state.scroll_row = 0;
                     self.state.loading = true;
                     self.state.error = None;
-                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client).await {
+                    if let Ok(feed) = crate::providers::anilist::home_feed(&self.client, &self.config.exclude_genres).await {
                         self.apply_home_feed(feed);
                     }
                     self.state.loading = false;
@@ -354,10 +358,7 @@ impl App {
                             crate::providers::anilist::search(&self.client, &self.state.query)
                                 .await?;
                         self.state.results = if self.config.filter_searches {
-                            crate::filter::filter_anime(
-                                search_results,
-                                &self.config.exclude_genres,
-                            )
+                            crate::filter::filter_anime(search_results, &self.config.exclude_genres)
                         } else {
                             search_results
                         };

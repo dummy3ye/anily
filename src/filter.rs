@@ -72,7 +72,10 @@ mod tests {
         let exclude = vec!["ntr".to_string()];
 
         // "country", "entry", "intro" contain n-t-r consecutively or similarly
-        assert!(!title_contains_excluded("Country Life in Another World", &exclude));
+        assert!(!title_contains_excluded(
+            "Country Life in Another World",
+            &exclude
+        ));
         assert!(!title_contains_excluded("Entry Level Hero", &exclude));
         assert!(!title_contains_excluded("Introduction to Magic", &exclude));
     }

@@ -132,11 +132,43 @@ pub async fn trending(client: &Client) -> Result<Vec<Anime>> {
     media_to_anime(response).await
 }
 
-pub async fn home_feed(client: &Client) -> Result<HomeFeed> {
+pub async fn home_feed(client: &Client, exclude_list: &[String]) -> Result<HomeFeed> {
+    let mut tags_not_in: Vec<String> = Vec::new();
+    let mut genres_not_in: Vec<String> = Vec::new();
+
+    for item in exclude_list {
+        for alias in crate::genre::expand_tag_aliases(item) {
+            tags_not_in.push(alias.clone());
+            genres_not_in.push(alias);
+        }
+    }
+
+    let query = if exclude_list.is_empty() {
+        "query { \
+            trending: Page(perPage: 16) { media(type: ANIME, sort: TRENDING_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres } } \
+            airing: Page(perPage: 10) { media(type: ANIME, status: RELEASING, sort: UPDATED_AT_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres } } \
+            popular: Page(perPage: 10) { media(type: ANIME, sort: POPULARITY_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres } } \
+            favorite: Page(perPage: 10) { media(type: ANIME, sort: FAVOURITES_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres } } \
+        }".to_string()
+    } else {
+        "query ($genres: [String], $tags: [String]) { \
+            trending: Page(perPage: 16) { media(type: ANIME, sort: TRENDING_DESC, genre_not_in: $genres, tag_not_in: $tags) { id title { romaji english native } coverImage { extraLarge large } episodes status genres } } \
+            airing: Page(perPage: 10) { media(type: ANIME, status: RELEASING, sort: UPDATED_AT_DESC, genre_not_in: $genres, tag_not_in: $tags) { id title { romaji english native } coverImage { extraLarge large } episodes status genres } } \
+            popular: Page(perPage: 10) { media(type: ANIME, sort: POPULARITY_DESC, genre_not_in: $genres, tag_not_in: $tags) { id title { romaji english native } coverImage { extraLarge large } episodes status genres } } \
+            favorite: Page(perPage: 10) { media(type: ANIME, sort: FAVOURITES_DESC, genre_not_in: $genres, tag_not_in: $tags) { id title { romaji english native } coverImage { extraLarge large } episodes status genres } } \
+        }".to_string()
+    };
+
+    let variables = serde_json::json!({
+        "genres": genres_not_in,
+        "tags": tags_not_in,
+    });
+
     let response: Response = client
         .post("https://graphql.anilist.co")
         .json(&serde_json::json!({
-            "query": "query { trending: Page(perPage: 30) { media(type: ANIME, sort: TRENDING_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres tags { name } } } airing: Page(perPage: 25) { media(type: ANIME, status: RELEASING, sort: UPDATED_AT_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres tags { name } } } popular: Page(perPage: 25) { media(type: ANIME, sort: POPULARITY_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres tags { name } } } favorite: Page(perPage: 25) { media(type: ANIME, sort: FAVOURITES_DESC) { id title { romaji english native } coverImage { extraLarge large } episodes status genres tags { name } } } }"
+            "query": query,
+            "variables": variables,
         }))
         .send()
         .await
