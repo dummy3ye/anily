@@ -19,6 +19,15 @@ All notable changes to Anily are documented here.
 - Fix search navigation and esc handling
 ([a692371](https://github.com/dummy3ye/anily/commit/a692371ab4129d0c5592c04ff1ec3d94a1f79174))
 
+- Cleanup
+([2679555](https://github.com/dummy3ye/anily/commit/267955547474fbac93ddf3be6eed7817df68855e))
+
+- Fix windows test
+([a7ca92d](https://github.com/dummy3ye/anily/commit/a7ca92d515b42ddbc40225e46ec4ca836304dbc9))
+
+- Cross plat test
+([60f556d](https://github.com/dummy3ye/anily/commit/60f556d654a3f8eaeef95fc0628917347c935496))
+
 
 ### Features
 
