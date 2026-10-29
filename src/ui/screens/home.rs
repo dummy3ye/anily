@@ -4,12 +4,14 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{Block, List, ListItem, ListState, Paragraph, Wrap},
     Frame,
 };
 
 const CARD_WIDTH: u16 = 26;
 const CARD_HEIGHT: u16 = 10;
+/// Width reserved on the right side of each card for episode count badges.
+const BADGE_AREA_WIDTH: u16 = 7;
 
 pub fn draw(frame: &mut Frame<'_>, app: &mut App) {
     let chunks = Layout::default()
@@ -298,66 +300,92 @@ fn draw_cards(frame: &mut Frame<'_>, app: &mut App, area: Rect) {
             }),
             card_area,
         );
-        if let Some(protocol) = app.cover_protocol(anime, cover_area.width, cover_area.height) {
-            frame.render_widget(ratatui_image::Image::new(&protocol), cover_area);
-        } else {
+                        // Define the badge area on the right side of the cover
+            let badge_area = Rect {
+                x: cover_area.x + cover_area.width,
+                y: cover_area.y,
+                width: BADGE_AREA_WIDTH,
+                height: 7,
+            };
+            // Adjust cover width to leave space for badges
+            let adjusted_cover_area = Rect {
+                x: cover_area.x,
+                y: cover_area.y,
+                width: cover_area.width - BADGE_AREA_WIDTH,
+                height: 7,
+            };
+            // Render cover image
+            if let Some(protocol) = app.cover_protocol(anime, adjusted_cover_area.width, adjusted_cover_area.height) {
+                frame.render_widget(ratatui_image::Image::new(&protocol), adjusted_cover_area);
+            } else {
+                frame.render_widget(
+                    Paragraph::new("cover unavailable").style(Style::default().fg(accent)),
+                    adjusted_cover_area,
+                );
+            }
+            // Render badges
+            let mut badge_spans = Vec::new();
+            if let Some(sub) = anime.sub_episodes {
+                badge_spans.push(Span::styled(
+                    format!(" CC {sub} "),
+                    Style::default()
+                        .fg(Color::Black)
+                        .bg(Color::Rgb(180, 240, 190))
+                        .add_modifier(Modifier::BOLD),
+                ));
+            }
+            if let Some(dub) = anime.dub_episodes {
+                badge_spans.push(Span::raw(" "));
+                // Use simple "mic" glyph instead of the emoji
+                badge_spans.push(Span::styled(
+                    format!(" mic {dub} "),
+                    Style::default()
+                        .fg(Color::Black)
+                        .bg(Color::Rgb(190, 225, 250))
+                        .add_modifier(Modifier::BOLD),
+                ));
+            }
+            // Fallback when no sub/dub info
+            if badge_spans.is_empty() {
+                if let Some(episodes) = anime.episodes {
+                    badge_spans.push(Span::styled(
+                        format!(" {episodes} eps "),
+                        Style::default().fg(Color::Gray),
+                    ));
+                }
+            }
+            let badge_line = Line::from(badge_spans);
             frame.render_widget(
-                Paragraph::new("cover unavailable").style(Style::default().fg(accent)),
-                cover_area,
+                Paragraph::new(badge_line).alignment(ratatui::layout::Alignment::Center),
+                badge_area,
             );
-        }
+
 
         frame.render_widget(
-            Paragraph::new(truncate(&anime.title, 24))
-                .wrap(Wrap { trim: true })
-                .style(Style::default().fg(Color::White).add_modifier(if selected {
-                    Modifier::BOLD
-                } else {
-                    Modifier::empty()
-                })),
-            Rect {
-                x: card_area.x,
-                y: card_area.y + 7,
-                width: card_area.width,
-                height: 1,
-            },
-        );
+    Paragraph::new(anime.title.clone())
+        .wrap(Wrap { trim: false })
+        .style(Style::default().fg(Color::White).add_modifier(if selected {
+            Modifier::BOLD
+        } else {
+            Modifier::empty()
+        })),
+    Rect {
+        x: card_area.x,
+        y: card_area.y + 7,
+        width: card_area.width,
+        height: 2,
+    },
+);
         let mut meta_spans = vec![Span::styled(
-            anime.status.to_lowercase(),
-            Style::default().fg(Color::Gray),
-        )];
-
-        if let Some(sub) = anime.sub_episodes {
-            meta_spans.push(Span::raw(" "));
-            meta_spans.push(Span::styled(
-                format!(" CC {sub} "),
-                Style::default()
-                    .bg(Color::Rgb(180, 240, 190))
-                    .fg(Color::Rgb(20, 40, 25))
-                    .add_modifier(Modifier::BOLD),
-            ));
-        }
-
-        if let Some(dub) = anime.dub_episodes {
-            meta_spans.push(Span::raw(" "));
-            meta_spans.push(Span::styled(
-                format!(" 🎤 {dub} "),
-                Style::default()
-                    .bg(Color::Rgb(190, 225, 250))
-                    .fg(Color::Rgb(20, 35, 55))
-                    .add_modifier(Modifier::BOLD),
-            ));
-        }
-
-        if anime.sub_episodes.is_none() && anime.dub_episodes.is_none() {
-            meta_spans.push(Span::raw("  "));
-            meta_spans.push(Span::styled(
-                anime
-                    .episodes
-                    .map_or_else(|| "? eps".to_string(), |n| format!("{n} eps")),
-                Style::default().fg(Color::Gray),
-            ));
-        }
+    anime.status.to_lowercase(),
+    Style::default().fg(Color::Gray),
+)];
+meta_spans.push(Span::raw(" "));
+meta_spans.push(Span::styled(
+    anime.episodes
+        .map_or_else(|| "? eps".to_string(), |n| format!("{n} eps")),
+    Style::default().fg(Color::Gray),
+));
 
         let metadata = Line::from(meta_spans);
         frame.render_widget(
@@ -368,7 +396,7 @@ fn draw_cards(frame: &mut Frame<'_>, app: &mut App, area: Rect) {
             }),
             Rect {
                 x: card_area.x,
-                y: card_area.y + 8,
+                y: card_area.y + 9,
                 width: card_area.width,
                 height: 1,
             },
