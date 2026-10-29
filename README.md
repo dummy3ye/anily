@@ -7,7 +7,7 @@ anime discovery, rich details, episode selection, and playback without leaving
 the terminal. It is written in Rust and works in regular terminals, with
 enhanced cover-art rendering in Kitty-compatible terminals.
 
-home screenshot
+![home](assets/home.png)
 
 ## Features
 
@@ -23,7 +23,7 @@ home screenshot
 - Nix flake for reproducible development and builds.
 - Linux, macOS, and Windows CI and release artifacts.
 
-anime details and episodes list screenshot.
+![overview](assets/overview.png)
 
 ## Requirements
 
