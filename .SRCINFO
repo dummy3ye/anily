@@ -1,0 +1,13 @@
+pkgbase = anily
+pkgname = anily
+pkgver = 0.1.2
+pkgrel = 1
+pkgdesc = A fast terminal-based anime streaming and discovery CLI
+url = https://github.com/dummy3ye/anily
+arch = x86_64 aarch64
+license = MIT OR Apache-2.0
+depends = mpv
+checkdepends = cargo
+makedepends = cargo rust
+source = anily-0.1.2.tar.gz::https://github.com/dummy3ye/anily/archive/refs/tags/v0.1.2.tar.gz
+sha256sums = SKIP

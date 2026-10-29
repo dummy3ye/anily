@@ -6,6 +6,9 @@ repository = "https://github.com/dummy3ye/anily"
 homepage = "https://github.com/dummy3ye/anily"
 description = "A fast terminal-based anime streaming and discovery CLI"
 license = "MIT OR Apache-2.0"
+exclude = [
+    "assets/*"
+]
 
 [dependencies]
 ratatui = "0.30"
@@ -22,7 +25,6 @@ base64 = "0.22"
 scraper = "0.20"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
 ratatui-image = { version = "11", default-features = false, features = ["image-defaults", "crossterm"] }
-# toml crate for parsing config files
 toml = "0.8"
 libc = "0.2"
 
