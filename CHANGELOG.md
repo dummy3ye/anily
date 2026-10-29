@@ -7,6 +7,71 @@ All notable changes to Anily are documented here.
 ### Bug Fixes
 
 
+- Add scroll windowing for compact sections
+([1ebd4f3](https://github.com/dummy3ye/anily/commit/1ebd4f3261eb2dfa9a4f5a9d0c97ccc6448e86fb))
+
+
+### Build & CI
+
+
+- Add format, check, and lint targets
+([29bdaed](https://github.com/dummy3ye/anily/commit/29bdaed2fd84f129fc014281dd3821e849fe85e5))
+
+- Add CodeQL analysis and Codecov coverage workflows
+([b4e818d](https://github.com/dummy3ye/anily/commit/b4e818d59921a3bb1c1f2e182abcf83b89d95031))
+
+- Configure cargo-dist and update release workflow for multi-platform binaries
+([431d6e5](https://github.com/dummy3ye/anily/commit/431d6e5cb3bc89ae24b9a23502ed52b9aac4a5d3))
+
+- Tailor configuration for dummy3ye/anily and npm publishing
+([61b10f8](https://github.com/dummy3ye/anily/commit/61b10f81677d3773e54a9fc7ebc09a273b4b342f))
+
+
+### Documentation
+
+
+- Added preview images
+([6360312](https://github.com/dummy3ye/anily/commit/63603125afe079f14773b3eaad60874347a64f22))
+
+- Added MIT and Apache-2.0
+([41a6939](https://github.com/dummy3ye/anily/commit/41a693903cf90ed0d420c14c724c212568a316fd))
+
+
+### Features
+
+
+- Add exclude_genres and filter_searches configuration options
+([b4623c7](https://github.com/dummy3ye/anily/commit/b4623c7b4b1c59bc96895e928101f61285339d95))
+
+- Filter anime by title keywords and over-fetch feed items
+([74f4113](https://github.com/dummy3ye/anily/commit/74f4113c8635db8ba0fcd3c52e2904b3ecf3fc22))
+
+- Display sub and dub episode badges for trending anime
+([ee74151](https://github.com/dummy3ye/anily/commit/ee741514790c5b603cceb4db49674c4e46e05350))
+
+
+### Other
+
+
+- Format code with rustfmt
+([462341b](https://github.com/dummy3ye/anily/commit/462341b2e9415e33ad7b4567a56ba88f97b26371))
+
+- Remove cc and dub badges from home cover
+([aa4dc7d](https://github.com/dummy3ye/anily/commit/aa4dc7d041f586e8680bbe9fb0c8f8b73cf2be49))
+
+
+### Performance
+
+
+- Push genre and tag exclusions to AniList GraphQL query
+([ba1aab6](https://github.com/dummy3ye/anily/commit/ba1aab6311c60571cd5730331389ccb2f3f7eeb4))
+
+## v0.1.2
+
+
+### Bug Fixes
+
+
 - Update all sections for same anime id and add secondary large fallback
 ([b7f4187](https://github.com/dummy3ye/anily/commit/b7f4187204e95df5b248864503059e05831e54ef))
 
@@ -41,6 +106,9 @@ All notable changes to Anily are documented here.
 
 - Rewrite the discord rpc to work for all type of discord installation
 ([9f0509f](https://github.com/dummy3ye/anily/commit/9f0509f2a272d0977b3be305942cdda610549a6b))
+
+- Release v0.1.2
+([a280ae2](https://github.com/dummy3ye/anily/commit/a280ae26527050d503ba29bc86a73bb4787e1e26))
 
 ## v0.1.1
 
